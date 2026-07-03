@@ -6,6 +6,7 @@
 <title>Digital Presence & Client Acquisition — John Baptiste</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --black:#08090a;
@@ -657,8 +658,8 @@
     <p class="goal" style="max-width:60ch;">Fill this out in your own words — there's no wrong answer. It shapes your positioning, your content, and your ad messaging. Scroll on for the questions.</p>
   </section>
 
-  <!-- QUESTIONNAIRE FORM — wraps slides 7 & 8, ready to be pointed at a Vercel API route -->
-  <form id="questionnaireForm" method="POST" action="/api/questionnaire">
+  <!-- QUESTIONNAIRE FORM — wraps slides 7 & 8, holds all the answers used to build the PDF -->
+  <form id="questionnaireForm" onsubmit="return false;">
   <!-- SLIDE 7 — QUESTIONS 1-6 -->
   <section class="slide" data-label="Q 1–6" id="s7" style="padding-top:9vh; padding-bottom:9vh; justify-content:flex-start;">
     <div class="round-label" style="margin-bottom:20px;">QUESTIONNAIRE — PART 1</div>
@@ -739,16 +740,98 @@
     <div class="round-label">FINAL ROUND</div>
     <h2 class="head">Fill It In. <span class="hl">Then We Build.</span></h2>
     <p class="sub">Once the questionnaire is done, we lock the niche positioning, write the landing page copy, set the content pillars, and shape the ad creative — then start Week 1.</p>
+    <p class="goal" style="margin-top:22px;">Step 1 — download your answers as a PDF. Step 2 — send that PDF to <b style="color:var(--neon)">lpalaciosalvero@gmail.com</b>. The button below opens your email app with the address already filled in — just attach the PDF you downloaded and hit send.</p>
     <div class="cta-row">
-      <button class="btn solid" type="submit" form="questionnaireForm">Send Answers</button>
+      <button class="btn solid" onclick="downloadQuestionnairePDF()">Download PDF</button>
+      <button class="btn" onclick="emailQuestionnairePDF()">Email PDF</button>
       <button class="btn" onclick="window.print()">Export / Print</button>
       <button class="btn" onclick="document.getElementById('s0').scrollIntoView({behavior:'smooth'})">Back to Top</button>
     </div>
+    <p id="pdfStatus" class="q-hint" style="margin-top:14px;"></p>
   </section>
 
 </div>
 
 <script>
+  const AGENCY_EMAIL = 'lpalaciosalvero@gmail.com';
+
+  const QUESTIONNAIRE = [
+    { id: 'q_about_you',        title: '01. About you' },
+    { id: 'q_specialization',   title: '02. Specialization' },
+    { id: 'q_ideal_client',     title: '03. Ideal client' },
+    { id: 'q_pain_points',      title: '04. Client pain points' },
+    { id: 'q_results_proof',    title: '05. Results & proof' },
+    { id: 'q_location_format',  title: '06. Location & format' },
+    { id: 'q_tone_personality', title: '07. Tone & personality' },
+    { id: 'q_competitors',      title: '08. Competitors' },
+    { id: 'q_offer',            title: '09. Entry offer' },
+    { id: 'q_expected_clients', title: '10. Client expectations' }
+  ];
+
+  function buildQuestionnairePDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const margin = 48;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const maxWidth = pageWidth - margin * 2;
+    let y = margin;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('John Baptiste — Client Discovery Questionnaire', margin, y);
+    y += 22;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text('Generated ' + new Date().toLocaleDateString(), margin, y);
+    doc.setTextColor(0);
+    y += 30;
+
+    QUESTIONNAIRE.forEach(q => {
+      const field = document.getElementById(q.id);
+      const answer = (field && field.value.trim()) || '(No answer provided)';
+
+      if(y > pageHeight - margin - 40){ doc.addPage(); y = margin; }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(q.title, margin, y);
+      y += 18;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      const lines = doc.splitTextToSize(answer, maxWidth);
+      lines.forEach(line => {
+        if(y > pageHeight - margin){ doc.addPage(); y = margin; }
+        doc.text(line, margin, y);
+        y += 15;
+      });
+      y += 16;
+    });
+
+    return doc;
+  }
+
+  function downloadQuestionnairePDF(){
+    buildQuestionnairePDF().save('john-baptiste-questionnaire.pdf');
+    const status = document.getElementById('pdfStatus');
+    if(status) status.textContent = 'PDF downloaded. Attach it to an email and send it to ' + AGENCY_EMAIL + '.';
+  }
+
+  function emailQuestionnairePDF(){
+    buildQuestionnairePDF().save('john-baptiste-questionnaire.pdf');
+    const subject = encodeURIComponent('John Baptiste — Discovery Questionnaire Answers');
+    const body = encodeURIComponent(
+      'Hi,\n\nAttached is my completed discovery questionnaire (the PDF that just downloaded to my device).\n\nThanks,\nJohn'
+    );
+    const status = document.getElementById('pdfStatus');
+    if(status) status.textContent = 'PDF downloaded — attach it in the email window that just opened, then hit send.';
+    setTimeout(() => {
+      window.location.href = 'mailto:' + AGENCY_EMAIL + '?subject=' + subject + '&body=' + body;
+    }, 500);
+  }
+
   const slides = Array.from(document.querySelectorAll('.slide'));
   const rail = document.getElementById('rail');
   const railCurrent = document.getElementById('railCurrent');
