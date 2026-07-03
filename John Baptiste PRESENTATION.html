@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Presence & Client Acquisition — John Baptiste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#08090a;
+    --black-2:#111312;
+    --black-3:#191c1a;
+    --neon:#9fe817;
+    --neon-dim:#669911;
+    --neon-soft:rgba(159,232,23,0.12);
+    --white:#f3f4ee;
+    --grey:#868c81;
+    --line:#262a25;
+    --mono:'JetBrains Mono', monospace;
+    --display:'Anton', sans-serif;
+    --body:'Space Grotesk', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--black);
+    color:var(--white);
+    font-family:var(--body);
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--neon); color:var(--black);}
+
+  /* scroll container */
+  .deck{
+    height:100vh;
+    overflow-y:scroll;
+    scroll-snap-type:y mandatory;
+  }
+  .slide{
+    min-height:100vh;
+    width:100%;
+    scroll-snap-align:start;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    position:relative;
+    padding:7vh 8vw 7vh 11vw;
+    border-bottom:1px solid var(--line);
+  }
+  @supports (height: 100dvh){
+    .deck{ height:100dvh; }
+    .slide{ min-height:100dvh; }
+  }
+  @media (max-width:820px){
+    .slide{padding:9vh 6vw 9vh 6vw;}
+  }
+
+  /* noise texture */
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:5;
+    opacity:0.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* side rep-tracker rail */
+  .rail{
+    position:fixed;
+    left:0; top:0; bottom:0;
+    width:7vw;
+    min-width:64px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    z-index:20;
+    border-right:1px solid var(--line);
+    background:linear-gradient(180deg, var(--black), var(--black-2));
+  }
+  @media (max-width:820px){ .rail{display:none;} }
+  .rail .tick{
+    width:26px; height:3px;
+    background:var(--line);
+    border-radius:2px;
+    cursor:pointer;
+    transition:all .25s ease;
+    position:relative;
+  }
+  .rail .tick.active{
+    background:var(--neon);
+    width:34px;
+    box-shadow:0 0 10px var(--neon);
+  }
+  .rail .tick:hover{ background:var(--neon-dim); }
+  .rail .count{
+    position:absolute; bottom:26px; left:50%; transform:translateX(-50%);
+    font-family:var(--mono); font-size:11px; color:var(--grey); letter-spacing:1px;
+  }
+  .rail .count b{color:var(--neon);}
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    color:var(--neon);
+    margin-bottom:18px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px; height:1px;
+    background:var(--neon);
+    display:inline-block;
+  }
+  h1.title{
+    font-family:var(--display);
+    font-weight:400;
+    text-transform:uppercase;
+    line-height:0.92;
+    letter-spacing:0.5px;
+    font-size:clamp(38px, 6.4vw, 96px);
+    color:var(--white);
+    max-width:16ch;
+  }
+  h1.title .hl{ color:var(--neon); }
+  .sub{
+    font-size:clamp(14px,1.4vw,18px);
+    color:var(--grey);
+    max-width:52ch;
+    margin-top:22px;
+    line-height:1.6;
+  }
+  .round-label{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--grey);
+    letter-spacing:2px;
+  }
+
+  h2.head{
+    font-family:var(--display);
+    font-weight:400;
+    text-transform:uppercase;
+    font-size:clamp(32px,4.4vw,58px);
+    line-height:0.95;
+    margin-bottom:8px;
+  }
+  h2.head .hl{color:var(--neon);}
+
+  .goal{
+    font-size:15px;
+    color:var(--grey);
+    max-width:60ch;
+    margin:14px 0 30px 0;
+    border-left:2px solid var(--neon);
+    padding-left:16px;
+  }
+
+  .steps{
+    display:grid;
+    gap:22px;
+    max-width:920px;
+  }
+  .step{
+    display:grid;
+    grid-template-columns:52px 1fr;
+    gap:18px;
+    padding-bottom:20px;
+    border-bottom:1px solid var(--line);
+  }
+  .step:last-child{border-bottom:none;}
+  .step .num{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--neon);
+    padding-top:3px;
+  }
+  .step h3{
+    font-family:var(--body);
+    font-weight:700;
+    font-size:16px;
+    margin-bottom:8px;
+    color:var(--white);
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  .step ul{ list-style:none; }
+  .step li{
+    font-size:14px;
+    color:var(--grey);
+    line-height:1.65;
+    position:relative;
+    padding-left:16px;
+    margin-bottom:5px;
+  }
+  .step li::before{
+    content:"›";
+    color:var(--neon);
+    position:absolute;
+    left:0;
+    font-weight:700;
+  }
+
+  /* funnel visual */
+  .funnel{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin-top:30px;
+  }
+  .funnel .node{
+    font-family:var(--mono);
+    font-size:12.5px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--white);
+    background:var(--black-2);
+    border:1px solid var(--line);
+    padding:14px 16px;
+    border-radius:2px;
+    min-width:140px;
+  }
+  .funnel .node b{ display:block; color:var(--neon); font-size:11px; margin-bottom:4px; letter-spacing:1.5px;}
+  .funnel .arrow{ color:var(--neon); font-family:var(--mono); font-size:18px; }
+  .funnel-note{
+    margin-top:22px;
+    font-size:14px;
+    color:var(--grey);
+    max-width:60ch;
+  }
+
+  /* schedule table */
+  .schedule-wrap{
+    width:100%;
+    max-width:980px;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .schedule{
+    width:100%;
+    min-width:520px;
+    border-collapse:collapse;
+    margin-top:10px;
+    font-family:var(--body);
+  }
+  .schedule th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--black);
+    background:var(--neon);
+    padding:12px 14px;
+  }
+  .schedule td{
+    padding:14px;
+    font-size:14px;
+    color:var(--grey);
+    border-bottom:1px solid var(--line);
+  }
+  .schedule tr td:first-child{
+    font-family:var(--mono);
+    color:var(--neon);
+    width:60px;
+  }
+  .schedule tr td:last-child{
+    color:var(--white);
+    width:130px;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  .schedule tbody tr:hover td{ background:var(--neon-soft); }
+
+  /* questionnaire */
+  .q-block{
+    max-width:760px;
+    margin-bottom:34px;
+  }
+  .q-num{
+    font-family:var(--mono);
+    color:var(--neon);
+    font-size:13px;
+    letter-spacing:1.5px;
+    margin-bottom:6px;
+  }
+  .q-title{
+    font-family:var(--body);
+    font-weight:700;
+    font-size:18px;
+    color:var(--white);
+    margin-bottom:6px;
+  }
+  .q-hint{
+    font-size:13px;
+    color:var(--grey);
+    margin-bottom:12px;
+    font-style:italic;
+  }
+  textarea{
+    width:100%;
+    background:var(--black-2);
+    border:1px solid var(--line);
+    color:var(--white);
+    font-family:var(--body);
+    font-size:14px;
+    padding:14px;
+    border-radius:2px;
+    resize:vertical;
+    min-height:70px;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  textarea:focus{
+    border-color:var(--neon);
+    box-shadow:0 0 0 1px var(--neon);
+  }
+  textarea::placeholder{ color:#4a4e46; }
+
+  .q-grid{
+    display:grid;
+    gap:8px;
+  }
+
+  @media (max-width:820px){
+    /* keeps iOS Safari from auto-zooming in when a textarea is focused */
+    textarea{ font-size:16px; }
+  }
+
+  .closing{
+    text-align:left;
+  }
+  .closing .head{ margin-bottom:14px; }
+  .cta-row{
+    margin-top:36px;
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .btn{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    padding:16px 26px;
+    border-radius:2px;
+    cursor:pointer;
+    border:1px solid var(--neon);
+    background:transparent;
+    color:var(--neon);
+    transition:all .2s ease;
+  }
+  .btn.solid{
+    background:var(--neon);
+    color:var(--black);
+  }
+  .btn:hover{
+    box-shadow:0 0 20px var(--neon-soft);
+    transform:translateY(-2px);
+  }
+
+  /* EKG line animation for hero */
+  .ekg-wrap{
+    position:absolute;
+    bottom:8vh;
+    left:11vw;
+    right:8vw;
+    height:70px;
+    opacity:0.9;
+  }
+  @media (max-width:820px){ .ekg-wrap{ left:6vw; right:6vw; } }
+  .ekg-wrap svg{ width:100%; height:100%; overflow:visible; }
+  .ekg-line{
+    fill:none;
+    stroke:var(--neon);
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    filter:drop-shadow(0 0 6px var(--neon));
+    stroke-dasharray:1400;
+    stroke-dashoffset:1400;
+    animation:draw 3.5s ease-in-out infinite;
+  }
+  @keyframes draw{
+    0%{ stroke-dashoffset:1400; }
+    55%{ stroke-dashoffset:0; }
+    100%{ stroke-dashoffset:-1400; }
+  }
+
+  .scroll-cue{
+    position:absolute;
+    bottom:4vh; left:11vw;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:2px;
+    color:var(--grey);
+    text-transform:uppercase;
+    display:flex; align-items:center; gap:10px;
+  }
+  @media (max-width:820px){ .scroll-cue{ left:6vw; } }
+  .scroll-cue .arrow-down{
+    width:1px; height:26px;
+    background:linear-gradient(var(--neon), transparent);
+    animation:bob 1.6s ease-in-out infinite;
+  }
+  @keyframes bob{
+    0%,100%{ transform:translateY(0); opacity:1;}
+    50%{ transform:translateY(8px); opacity:0.4;}
+  }
+
+  .corner-tag{
+    position:absolute;
+    top:7vh; right:8vw;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:2px;
+    color:var(--grey);
+    text-transform:uppercase;
+    text-align:right;
+  }
+  @media (max-width:820px){ .corner-tag{ right:6vw; top:6vh; font-size:10px;} }
+  .corner-tag b{ color:var(--neon); }
+
+  /* hero photo — full image, right side, faded into the background */
+  .hero-photo{
+    position:absolute;
+    top:0; right:0;
+    height:100%;
+    width:44%;
+    background-image:url('John baptiste foto hero.png');
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size:cover;
+    z-index:1;
+    opacity:0.55;
+    -webkit-mask-image:linear-gradient(to right, transparent, black 40%);
+    mask-image:linear-gradient(to right, transparent, black 40%);
+    pointer-events:none;
+  }
+  @media (max-width:820px){
+    .hero-photo{
+      width:100%;
+      height:50%;
+      top:auto; bottom:0;
+      opacity:0.28;
+      -webkit-mask-image:linear-gradient(to top, black 35%, transparent);
+      mask-image:linear-gradient(to top, black 35%, transparent);
+    }
+  }
+  .eyebrow, h1.title, .sub{ position:relative; z-index:2; }
+  .corner-tag, .ekg-wrap, .scroll-cue{ z-index:2; }
+
+  @media (prefers-reduced-motion: reduce){
+    .ekg-line{ animation:none; stroke-dashoffset:0; }
+    .scroll-cue .arrow-down{ animation:none; }
+    html{ scroll-behavior:auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<nav class="rail" id="rail">
+  <div class="count"><b id="railCurrent">01</b>/09</div>
+</nav>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 0 — HERO -->
+  <section class="slide" data-label="Intro" id="s0">
+    <div class="hero-photo" role="img" aria-label="John Baptiste"></div>
+    <div class="corner-tag">Client Strategy Deck<br><b>John Baptiste</b></div>
+    <div class="eyebrow">Strategy Roadmap</div>
+    <h1 class="title">Digital Presence <span class="hl">&amp;</span><br>Client Acquisition</h1>
+    <p class="sub">The full plan we'll follow to build your online presence and turn it into paying clients — organic content, a real conversion funnel, and paid ads working together.</p>
+    <div class="ekg-wrap">
+      <svg viewBox="0 0 1000 70" preserveAspectRatio="none">
+        <polyline class="ekg-line" points="0,35 90,35 115,35 130,10 145,60 160,35 210,35 250,35 270,20 285,50 300,35 340,35 420,35 445,8 460,62 475,35 520,35 600,35 625,15 640,55 655,35 700,35 780,35 805,5 820,65 835,35 880,35 960,35 1000,35"/>
+      </svg>
+    </div>
+    <div class="scroll-cue"><span class="arrow-down"></span>Scroll to start</div>
+  </section>
+
+  <!-- SLIDE 1 — ROUND 0 -->
+  <section class="slide" data-label="Round 0" id="s1">
+    <div class="round-label">ROUND 00 / WARM-UP</div>
+    <h2 class="head">Diagnosis <span class="hl">&amp;</span> Foundations</h2>
+    <p class="goal">Before anything gets published, we define positioning and audit what already exists.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">→</div>
+        <div>
+          <h3>Define the niche</h3>
+          <ul>
+            <li>Weight loss, strength, women 40+, athletic performance, body recomposition, physique coaching, discipline-driven online coaching — pick a lane. Specific beats generic.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">→</div>
+        <div>
+          <h3>Define the ideal client</h3>
+          <ul>
+            <li>Age, lifestyle, the exact problem they want solved, and what's stopping them today.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">→</div>
+        <div>
+          <h3>Audit existing assets</h3>
+          <ul>
+            <li>Current Instagram/Facebook, Google reviews, testimonials, before/after photos already sitting on a phone.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2 — ROUND 1 -->
+  <section class="slide" data-label="Round 1" id="s2">
+    <div class="round-label">ROUND 01 / BUILD</div>
+    <h2 class="head">A Presence Built <span class="hl">to Convert</span></h2>
+    <p class="goal">Every channel has one job: move someone closer to booking a session.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">01</div>
+        <div>
+          <h3>Landing page</h3>
+          <ul>
+            <li>Value proposition, testimonials, before/after, one clear CTA — trial session, form, or WhatsApp.</li>
+            <li>Meta Pixel installed day one. No pixel, no optimized ads later.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">02</div>
+        <div>
+          <h3>Google Business Profile</h3>
+          <ul>
+            <li>Category: Personal Trainer. Fixed location or service-area, depending on where sessions happen.</li>
+            <li>Photos, services, and reviews stacking from client one.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">03</div>
+        <div>
+          <h3>Instagram — main channel</h3>
+          <ul>
+            <li>Three content pillars: Authority (tips, technique), Proof (transformations, testimonials), Personality (behind the scenes).</li>
+            <li>Reels first — that's where organic reach lives right now.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">04</div>
+        <div>
+          <h3>Facebook + optional channels</h3>
+          <ul>
+            <li>Mirrors Instagram content, doubles as the ad platform. Local groups for extra organic reach.</li>
+            <li>TikTok / YouTube Shorts if the audience skews younger — repurpose the same Reels.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3 — ROUND 2 ADS -->
+  <section class="slide" data-label="Round 2" id="s3">
+    <div class="round-label">ROUND 02 / PAID PUSH</div>
+    <h2 class="head">Facebook <span class="hl">&amp;</span> Instagram Ads</h2>
+    <p class="goal">Never sell "become my client" cold. Sell a low-commitment first step.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">→</div>
+        <div>
+          <h3>The offer</h3>
+          <ul>
+            <li>Free trial session, free fitness assessment, or a 7-day challenge — not a hard sell.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">→</div>
+        <div>
+          <h3>Campaign setup</h3>
+          <ul>
+            <li>Lead Generation or Traffic-to-landing-page with a form.</li>
+            <li>Start local: geographic radius + fitness/gym/weight-loss interests, refine with real data after.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">→</div>
+        <div>
+          <h3>Creative &amp; budget</h3>
+          <ul>
+            <li>Real client videos and the trainer on camera beat stock content every time in this niche.</li>
+            <li>Test at $5–10/day across 2–3 variations before scaling spend.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4 — FUNNEL -->
+  <section class="slide" data-label="Funnel" id="s4">
+    <div class="round-label">ROUND 03 / THE CONNECTION</div>
+    <h2 class="head">The Full <span class="hl">Funnel</span></h2>
+    <p class="goal">Content and ads without a connected funnel only generate likes — not clients.</p>
+    <div class="funnel">
+      <div class="node"><b>Step 01</b>FB / IG Ad</div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Step 02</b>Landing page + offer</div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Step 03</b>WhatsApp / Form</div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Step 04</b>Call / Trial session</div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Step 05</b>Client</div>
+    </div>
+    <p class="funnel-note">Round 04 — Measurement: Meta Pixel live from day one, and the number that matters is <b style="color:var(--neon)">cost per lead</b> — not reach, not likes.</p>
+  </section>
+
+  <!-- SLIDE 5 — SCHEDULE -->
+  <section class="slide" data-label="Schedule" id="s5">
+    <div class="round-label">TRAINING SCHEDULE</div>
+    <h2 class="head">Execution <span class="hl">Order</span></h2>
+    <p class="goal">The sequence we actually follow, week by week.</p>
+    <div class="schedule-wrap">
+      <table class="schedule">
+        <thead>
+          <tr><th>Set</th><th>Action</th><th>Timeframe</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>01</td><td>Build landing page + install Meta Pixel</td><td>Week 1</td></tr>
+          <tr><td>02</td><td>Optimize Instagram + start posting consistently (3–4 Reels/week)</td><td>Weeks 1–2</td></tr>
+          <tr><td>03</td><td>Set up Google Business Profile</td><td>Week 1–2</td></tr>
+          <tr><td>04</td><td>Launch FB/IG Ads with low-commitment offer</td><td>Week 2–3</td></tr>
+          <tr><td>05</td><td>Measure, adjust creatives, scale what performs</td><td>Ongoing</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SLIDE 6 — QUESTIONNAIRE INTRO -->
+  <section class="slide" data-label="Questionnaire" id="s6">
+    <div class="round-label">BEFORE WE START</div>
+    <h2 class="head">Client <span class="hl">Discovery</span></h2>
+    <p class="goal" style="max-width:60ch;">Fill this out in your own words — there's no wrong answer. It shapes your positioning, your content, and your ad messaging. Scroll on for the questions.</p>
+  </section>
+
+  <!-- QUESTIONNAIRE FORM — wraps slides 7 & 8, ready to be pointed at a Vercel API route -->
+  <form id="questionnaireForm" method="POST" action="/api/questionnaire">
+  <!-- SLIDE 7 — QUESTIONS 1-6 -->
+  <section class="slide" data-label="Q 1–6" id="s7" style="padding-top:9vh; padding-bottom:9vh; justify-content:flex-start;">
+    <div class="round-label" style="margin-bottom:20px;">QUESTIONNAIRE — PART 1</div>
+    <div class="q-grid">
+      <div class="q-block">
+        <div class="q-num">01</div>
+        <div class="q-title">About you</div>
+        <div class="q-hint">Your story, your background, why you became a trainer.</div>
+        <textarea id="q_about_you" name="about_you" placeholder="Type your answer here..."></textarea>
+      </div>
+      <div class="q-block">
+        <div class="q-num">02</div>
+        <div class="q-title">Specialization</div>
+        <div class="q-hint">What do you want to be known for?</div>
+        <textarea id="q_specialization" name="specialization" placeholder="Type your answer here..."></textarea>
+      </div>
+      <div class="q-block">
+        <div class="q-num">03</div>
+        <div class="q-title">Ideal client</div>
+        <div class="q-hint">Age, lifestyle, and the main problem they come to solve.</div>
+        <textarea id="q_ideal_client" name="ideal_client" placeholder="Type your answer here..."></textarea>
+      </div>
+      <div class="q-block">
+        <div class="q-num">04</div>
+        <div class="q-title">Client pain points</div>
+        <div class="q-hint">What usually stops people from starting?</div>
+        <textarea id="q_pain_points" name="pain_points" placeholder="Type your answer here..."></textarea>
+      </div>
+      <div class="q-block">
+        <div class="q-num">05</div>
+        <div class="q-title">Results &amp; proof</div>
+        <div class="q-hint">Testimonials, before/after photos, success stories. Please send all photos, videos, stories and past content to lpalaciosalvero@gmail.com so we can use it.</div>
+        <textarea id="q_results_proof" name="results_proof" placeholder="Type your answer here..."></textarea>
+      </div>
+      <div class="q-block" style="margin-bottom:0;">
+        <div class="q-num">06</div>
+        <div class="q-title">Location &amp; format</div>
+        <div class="q-hint">Studio, gym, homes, outdoors, online — list all.</div>
+        <textarea id="q_location_format" name="location_format" placeholder="Type your answer here..."></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 8 — QUESTIONS 7-10 -->
+  <section class="slide" data-label="Q 7–10" id="s8" style="padding-top:9vh; padding-bottom:9vh; justify-content:flex-start;">
+    <div class="round-label" style="margin-bottom:20px;">QUESTIONNAIRE — PART 2</div>
+    <div class="q-grid">
+      <div class="q-block">
+        <div class="q-num">07</div>
+        <div class="q-title">Tone &amp; personality</div>
+        <div class="q-hint">Tough and motivating? Disciplined and structured? Friendly? Technical? Fun and energetic?</div>
+        <textarea id="q_tone_personality" name="tone_personality" placeholder="Type your answer here..."></textarea>
+      </div>
+      <div class="q-block">
+        <div class="q-num">08</div>
+        <div class="q-title">Competitors</div>
+        <div class="q-hint">Other trainers/gyms nearby — what do you do differently?</div>
+        <textarea id="q_competitors" name="competitors" placeholder="Type your answer here..."></textarea>
+      </div>
+      <div class="q-block">
+        <div class="q-num">09</div>
+        <div class="q-title">Entry offer</div>
+        <div class="q-hint">A free trial session, a free fitness assessment, or a short challenge — something low-cost or free that gets a new lead to try you before asking them to pay. What could that be for you?</div>
+        <textarea id="q_offer" name="offer" placeholder="Type your answer here..."></textarea>
+      </div>
+      <div class="q-block" style="margin-bottom:0;">
+        <div class="q-num">10</div>
+        <div class="q-title">Client expectations</div>
+        <div class="q-hint">Realistically, how many new clients do you expect to gain from this strategy (e.g. in the first 3 months)?</div>
+        <textarea id="q_expected_clients" name="expected_clients" placeholder="Type your answer here..."></textarea>
+      </div>
+    </div>
+  </section>
+  </form>
+
+  <!-- SLIDE 9 — CLOSING -->
+  <section class="slide closing" data-label="Next" id="s9">
+    <div class="round-label">FINAL ROUND</div>
+    <h2 class="head">Fill It In. <span class="hl">Then We Build.</span></h2>
+    <p class="sub">Once the questionnaire is done, we lock the niche positioning, write the landing page copy, set the content pillars, and shape the ad creative — then start Week 1.</p>
+    <div class="cta-row">
+      <button class="btn solid" type="submit" form="questionnaireForm">Send Answers</button>
+      <button class="btn" onclick="window.print()">Export / Print</button>
+      <button class="btn" onclick="document.getElementById('s0').scrollIntoView({behavior:'smooth'})">Back to Top</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const rail = document.getElementById('rail');
+  const railCurrent = document.getElementById('railCurrent');
+
+  // build rail ticks
+  slides.forEach((s, i) => {
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.dataset.index = i;
+    tick.title = s.dataset.label || ('Slide ' + (i+1));
+    tick.addEventListener('click', () => s.scrollIntoView({behavior:'smooth'}));
+    rail.insertBefore(tick, rail.querySelector('.count'));
+  });
+  const ticks = Array.from(rail.querySelectorAll('.tick'));
+
+  let currentIndex = 0;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        const idx = slides.indexOf(entry.target);
+        currentIndex = idx;
+        ticks.forEach(t => t.classList.remove('active'));
+        if(ticks[idx]) ticks[idx].classList.add('active');
+        railCurrent.textContent = String(idx+1).padStart(2,'0');
+      }
+    });
+  }, { root: document.getElementById('deck'), threshold: 0.5 });
+
+  slides.forEach(s => observer.observe(s));
+
+  // navigate slides
+  function goToSlide(i){
+    const target = slides[Math.max(0, Math.min(slides.length - 1, i))];
+    target.scrollIntoView({behavior:'smooth'});
+  }
+
+  // click on the right edge of the screen to advance
+  const deck = document.getElementById('deck');
+  deck.addEventListener('click', (e) => {
+    if(e.target.closest('textarea, button, a, input, select, .btn')) return;
+    const rect = deck.getBoundingClientRect();
+    if(e.clientX - rect.left > rect.width * 0.75){
+      goToSlide(currentIndex + 1);
+    }
+  });
+
+  // arrow key navigation (ignored while typing in the questionnaire)
+  window.addEventListener('keydown', (e) => {
+    const activeTag = (document.activeElement && document.activeElement.tagName) || '';
+    if(activeTag === 'TEXTAREA' || activeTag === 'INPUT') return;
+    if(e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown'){
+      e.preventDefault();
+      goToSlide(currentIndex + 1);
+    } else if(e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp'){
+      e.preventDefault();
+      goToSlide(currentIndex - 1);
+    }
+  });
+</script>
+
+</body>
+</html>
