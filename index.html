@@ -337,6 +337,32 @@
     text-align:left;
   }
   .closing .head{ margin-bottom:14px; }
+  .pdf-steps{
+    display:grid;
+    gap:0;
+    max-width:600px;
+    margin-top:26px;
+  }
+  .pdf-step{
+    display:grid;
+    grid-template-columns:36px 1fr;
+    gap:16px;
+    align-items:start;
+    padding:16px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .pdf-step:last-child{ border-bottom:none; }
+  .pdf-step .pdf-step-num{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:20px;
+    color:var(--neon);
+  }
+  .pdf-step p{
+    font-size:14px;
+    color:var(--grey);
+    line-height:1.6;
+  }
   .cta-row{
     margin-top:36px;
     display:flex;
@@ -460,6 +486,19 @@
     .ekg-line{ animation:none; stroke-dashoffset:0; }
     .scroll-cue .arrow-down{ animation:none; }
     html{ scroll-behavior:auto; }
+  }
+
+  @media print{
+    .rail, .grain, .scroll-cue, .cta-row, #pdfStatus{ display:none !important; }
+    .deck{ height:auto !important; overflow:visible !important; scroll-snap-type:none !important; }
+    .slide{
+      min-height:0 !important;
+      height:auto !important;
+      page-break-after:always;
+      page-break-inside:avoid;
+    }
+    .slide:last-child{ page-break-after:auto; }
+    textarea{ border:1px solid #ccc !important; color:#000 !important; background:#fff !important; }
   }
 </style>
 </head>
@@ -655,7 +694,8 @@
   <section class="slide" data-label="Questionnaire" id="s6">
     <div class="round-label">BEFORE WE START</div>
     <h2 class="head">Client <span class="hl">Discovery</span></h2>
-    <p class="goal" style="max-width:60ch;">Fill this out in your own words — there's no wrong answer. It shapes your positioning, your content, and your ad messaging. Scroll on for the questions.</p>
+    <p class="goal" style="max-width:60ch;">Fill this out in your own words — there's no wrong answer. It shapes your positioning, your content, and your ad messaging.</p>
+    <p class="sub" style="margin-top:0;">How it works: answer every question below, then scroll to the very end and download your answers as a PDF. Send that PDF to <b style="color:var(--neon)">lpalaciosalvero@gmail.com</b> and we'll get to work. Scroll on for the questions.</p>
   </section>
 
   <!-- QUESTIONNAIRE FORM — wraps slides 7 & 8, holds all the answers used to build the PDF -->
@@ -740,12 +780,18 @@
     <div class="round-label">FINAL ROUND</div>
     <h2 class="head">Fill It In. <span class="hl">Then We Build.</span></h2>
     <p class="sub">Once the questionnaire is done, we lock the niche positioning, write the landing page copy, set the content pillars, and shape the ad creative — then start Week 1.</p>
-    <p class="goal" style="margin-top:22px;">Step 1 — download your answers as a PDF. Step 2 — send that PDF to <b style="color:var(--neon)">lpalaciosalvero@gmail.com</b>. The button below opens your email app with the address already filled in — just attach the PDF you downloaded and hit send.</p>
+    <div class="pdf-steps">
+      <div class="pdf-step">
+        <span class="pdf-step-num">1</span>
+        <p>Download your answers as a PDF using the button below.</p>
+      </div>
+      <div class="pdf-step">
+        <span class="pdf-step-num">2</span>
+        <p>Send that PDF to <b style="color:var(--neon)">lpalaciosalvero@gmail.com</b> from your own email.</p>
+      </div>
+    </div>
     <div class="cta-row">
       <button class="btn solid" onclick="downloadQuestionnairePDF()">Download PDF</button>
-      <button class="btn" onclick="emailQuestionnairePDF()">Email PDF</button>
-      <button class="btn" onclick="window.print()">Export / Print</button>
-      <button class="btn" onclick="document.getElementById('s0').scrollIntoView({behavior:'smooth'})">Back to Top</button>
     </div>
     <p id="pdfStatus" class="q-hint" style="margin-top:14px;"></p>
   </section>
@@ -817,19 +863,6 @@
     buildQuestionnairePDF().save('john-baptiste-questionnaire.pdf');
     const status = document.getElementById('pdfStatus');
     if(status) status.textContent = 'PDF downloaded. Attach it to an email and send it to ' + AGENCY_EMAIL + '.';
-  }
-
-  function emailQuestionnairePDF(){
-    buildQuestionnairePDF().save('john-baptiste-questionnaire.pdf');
-    const subject = encodeURIComponent('John Baptiste — Discovery Questionnaire Answers');
-    const body = encodeURIComponent(
-      'Hi,\n\nAttached is my completed discovery questionnaire (the PDF that just downloaded to my device).\n\nThanks,\nJohn'
-    );
-    const status = document.getElementById('pdfStatus');
-    if(status) status.textContent = 'PDF downloaded — attach it in the email window that just opened, then hit send.';
-    setTimeout(() => {
-      window.location.href = 'mailto:' + AGENCY_EMAIL + '?subject=' + subject + '&body=' + body;
-    }, 500);
   }
 
   const slides = Array.from(document.querySelectorAll('.slide'));
